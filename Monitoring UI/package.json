@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://keyurr26.github.io/React-WTG-Monitoring-UI/",
+  "homepage": "https://keyurr26.github.io/React-wtg-monitoring-ui-new/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
