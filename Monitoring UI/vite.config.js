@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/React-wtg-monitoring-ui-new/',
+  base: '/React-WTG-Monitoring-UI/',
   plugins: [react()],
   server: {
     port: 6900,
