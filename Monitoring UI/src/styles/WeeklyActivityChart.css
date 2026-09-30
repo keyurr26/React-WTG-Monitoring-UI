@@ -1,0 +1,40 @@
+/* Gantt Chart Graphic Bar Labels */
+.gantt-bar-label-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
+.gantt-bar-label-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  display: block;
+  width: 100%;
+}
+
+/* Chart Title Styles */
+.chart-view-title {
+  margin: 0;
+  font-weight: bold;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 24px;
+}
+
+.chart-view-icon-box {
+  display: inline-flex;
+  padding: 8px;
+  background-color: #e0e7ff;
+  border-radius: 8px;
+  color: #4f46e5;
+}
