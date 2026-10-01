@@ -24,13 +24,6 @@ const TurbinePlannedSchedules = () => {
 
         <Box sx={{ mb: 3 }}>
           <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <CalendarMonthIcon sx={{ mr: 1 }} color="primary" />
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Turbine Installation Planning Workspace</Typography>
-            </Box>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              Select Scope Boundaries, Cluster, and Category to manage deployment targets and generate baseline activity charts.
-            </Typography>
 
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
               <FormControl size="small" sx={{ flex: 1, minWidth: 140 }}>
