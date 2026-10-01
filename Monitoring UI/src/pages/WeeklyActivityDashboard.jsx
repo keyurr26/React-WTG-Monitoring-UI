@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import '../styles/WeeklyActivityDashboard.css';
-import { ChevronDown, ChevronUp, Calendar, Target, Settings, Clock, Activity } from 'lucide-react';
-import { Box, Paper, FormControl, InputLabel, Select, MenuItem, Typography, Button } from '@mui/material';
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar, Target, Settings, Clock, Activity } from 'lucide-react';
+import { Box, Paper, FormControl, InputLabel, Select, MenuItem, Typography, Button, IconButton } from '@mui/material';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import DownloadIcon from '@mui/icons-material/Download';
 
@@ -148,6 +148,8 @@ const WeeklyActivityDashboard = () => {
 
   const [categoryFilter, setCategoryFilter] = useState('');
   const [showAllData, setShowAllData] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 5;
 
   const { categories, availableCategories, stats, timelineDates, computedStartStr, computedEndStr, filteredTurbines } = useMemo(() => {
     let totalActivities = 0;
@@ -212,6 +214,17 @@ const WeeklyActivityDashboard = () => {
       filteredTurbines: filteredTurbinesList
     };
   }, [categoryFilter, rawData]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, selectedWeekId, showAllData]);
+
+  const totalRecords = filteredTurbines.length;
+  const currentRecordsPerPage = showAllData ? Math.max(totalRecords, 1) : recordsPerPage;
+  const totalPages = Math.ceil(totalRecords / currentRecordsPerPage) || 1;
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * currentRecordsPerPage;
+  const currentRecords = filteredTurbines.slice(startIndex, startIndex + currentRecordsPerPage);
 
   const handleDownloadReport = () => {
     // 1. Setup CSV headers
@@ -284,7 +297,7 @@ const WeeklyActivityDashboard = () => {
         <div className="dashboard-card timeline-section">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h2 className="timeline-title" style={{ margin: 0 }}>
-              <Activity size={20} style={{ marginRight: '8px', color: '#3b82f6' }} />
+              <Calendar size={20} style={{ marginRight: '8px', color: '#3b82f6' }} />
               Weekly Timeline Overview
             </h2>
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -313,7 +326,7 @@ const WeeklyActivityDashboard = () => {
                   ))}
                 </Select>
               </FormControl>
-              {filteredTurbines.length > 5 && (
+              {filteredTurbines.length > recordsPerPage && (
                 <Button 
                   variant="outlined" 
                   onClick={() => setShowAllData(!showAllData)}
@@ -334,7 +347,7 @@ const WeeklyActivityDashboard = () => {
             </div>
           </div>
 
-          <div className="timeline-scroll-container" ref={scrollContainerRef}>
+          <div className="timeline-scroll-container" ref={scrollContainerRef} style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}>
             <div className="timeline-wrapper">
               <div className="timeline-header" style={{ display: 'grid', gridTemplateColumns: `120px repeat(${timelineDates.length}, minmax(${colWidth}px, 1fr))` }}>
                 <div className="timeline-turbine-label">Turbine</div>
@@ -350,7 +363,7 @@ const WeeklyActivityDashboard = () => {
                 ))}
               </div>
 
-              {(showAllData ? filteredTurbines : filteredTurbines.slice(0, 5)).map(t => (
+              {currentRecords.map(t => (
                 <div key={t.turbine} className="timeline-row" style={{ display: 'grid', gridTemplateColumns: `120px repeat(${timelineDates.length}, minmax(${colWidth}px, 1fr))` }}>
                   <div className="timeline-row-label">{t.turbine}</div>
                   {/* Background grid lines drawn directly into the parent grid cells */}
@@ -400,6 +413,35 @@ const WeeklyActivityDashboard = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', border: '1px solid #e2e8f0', borderTop: 'none', backgroundColor: '#f9fafb', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
+            <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500, fontSize: '13px' }}>
+              Showing {currentRecords.length} records
+            </Typography>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500, fontSize: '13px' }}>
+                Page {safeCurrentPage} of {totalPages}
+              </Typography>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={safeCurrentPage === 1}
+                  sx={{ border: '1px solid #e2e8f0', borderRadius: '4px', padding: '2px', backgroundColor: '#fff', '&:disabled': { backgroundColor: '#f1f5f9' } }}
+                >
+                  <ChevronLeft size={16} />
+                </IconButton>
+                <IconButton 
+                  size="small"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={safeCurrentPage === totalPages}
+                  sx={{ border: '1px solid #e2e8f0', borderRadius: '4px', padding: '2px', backgroundColor: '#fff', '&:disabled': { backgroundColor: '#f1f5f9' } }}
+                >
+                  <ChevronRight size={16} />
+                </IconButton>
+              </div>
             </div>
           </div>
         </div>
