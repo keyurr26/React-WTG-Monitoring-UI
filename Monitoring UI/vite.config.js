@@ -9,6 +9,7 @@ export default defineConfig({
     port: 6900,
   },
   build: {
-    outDir: 'docs'
+    outDir: '../docs',
+    emptyOutDir: true
   }
 })
