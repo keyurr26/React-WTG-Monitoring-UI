@@ -213,6 +213,33 @@ const WeeklyActivityDashboard = () => {
     };
   }, [categoryFilter, rawData]);
 
+  const handleDownloadReport = () => {
+    // 1. Setup CSV headers
+    let csvContent = "Turbine,Category,Activity,Status,Planned Start,Planned End,Duration (Days)\n";
+    
+    // 2. Loop through the currently filtered data
+    filteredTurbines.forEach(t => {
+      t.activities.forEach(a => {
+        // Enclose text in quotes to avoid issues with commas in activity names
+        const formattedStart = a.act_planned_start_date.split('T')[0].split('-').reverse().join('-');
+        const formattedEnd = a.act_planned_end_date.split('T')[0].split('-').reverse().join('-');
+        csvContent += `${t.turbine},${a.category},"${a.activity_name}",${a.status},${formattedStart},${formattedEnd},${a.duration}\n`;
+      });
+    });
+
+    // 3. Create a downloadable Blob
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Dashboard_Report_${selectedWeekId}.csv`);
+    
+    // 4. Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="dashboard-page">
       <div className="dashboard-container">
@@ -298,6 +325,7 @@ const WeeklyActivityDashboard = () => {
               <Button 
                 variant="contained" 
                 color="primary"
+                onClick={handleDownloadReport}
                 startIcon={<DownloadIcon />}
                 sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px', height: '40px' }}
               >
@@ -344,8 +372,12 @@ const WeeklyActivityDashboard = () => {
 
                       if (eDate < timelineDates[0] || sDate > timelineDates[timelineDates.length - 1]) return null;
 
-                      const leftPct = (offsetDays / totalDays) * 100;
-                      const widthPct = (durationDays / totalDays) * 100;
+                      // Introduce a physical gap between blocks so they don't visually touch
+                      const renderOffsetDays = offsetDays + 0.05;
+                      const renderDurationDays = Math.max(0.1, durationDays - 0.1);
+
+                      const leftPct = (renderOffsetDays / totalDays) * 100;
+                      const widthPct = (renderDurationDays / totalDays) * 100;
 
                       const baseName = a.activity_name.split(' (')[0];
                       const color = activityColorMap[baseName] || activityColorMap[baseName.toUpperCase()] || activityColors[i % activityColors.length];
