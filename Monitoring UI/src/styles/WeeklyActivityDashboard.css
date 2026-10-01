@@ -108,6 +108,7 @@
 }
 .timeline-wrapper {
   width: 100%;
+  min-width: max-content;
 }
 .timeline-header {
   position: sticky;
