@@ -16,6 +16,8 @@ import { Box, Typography, FormControl, InputLabel, Select, MenuItem, Paper, Butt
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import DownloadIcon from '@mui/icons-material/Download';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import '../styles/WeeklyActivityChart.css';
 
 const activityColors = {
@@ -38,6 +40,7 @@ const parseDateStr = (dateStr) => {
 };
 
 const WeeklyActivityChart = () => {
+  const [isVisible, setIsVisible] = useState(false);
   const [selectedWeekId, setSelectedWeekId] = useState(weeksData[0].week_id);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [chartWidth, setChartWidth] = useState(1000);
@@ -192,8 +195,23 @@ const WeeklyActivityChart = () => {
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#f4f7f9', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <Box sx={{ maxWidth: '1200px', mx: 'auto' }}>
 
-        <Box sx={{ mb: 3 }}>
-          <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #e2e8f0', borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: isVisible ? 2 : 0 }}>
+          <Button 
+            size="small"
+            variant="outlined" 
+            color="primary" 
+            startIcon={isVisible ? <VisibilityOffIcon /> : <VisibilityIcon />}
+            onClick={() => setIsVisible(!isVisible)}
+            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, bgcolor: 'white', '&:hover': { bgcolor: '#f8fafc' } }}
+          >
+            {isVisible ? 'Hide Chart View' : 'Show Chart View'}
+          </Button>
+        </Box>
+
+        {isVisible && (
+          <Box sx={{ animation: 'fadeIn 0.3s ease-in-out' }}>
+            <Box sx={{ mb: 3 }}>
+              <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #e2e8f0', borderRadius: 2 }}>
 
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
               <FormControl size="small" sx={{ flex: 1, minWidth: 140 }}>
@@ -361,6 +379,8 @@ const WeeklyActivityChart = () => {
           )}
 
         </Paper>
+          </Box>
+        )}
       </Box>
     </Box>
   );
