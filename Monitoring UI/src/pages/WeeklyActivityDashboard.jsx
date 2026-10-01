@@ -236,7 +236,8 @@ const WeeklyActivityDashboard = () => {
         // Enclose text in quotes to avoid issues with commas in activity names
         const formattedStart = a.act_planned_start_date.split('T')[0].split('-').reverse().join('-');
         const formattedEnd = a.act_planned_end_date.split('T')[0].split('-').reverse().join('-');
-        csvContent += `${t.turbine},${a.category},"${a.activity_name}",${a.status},${formattedStart},${formattedEnd},${a.duration}\n`;
+        // Prefix with a tab character to force Excel to treat it as pure text without visible formula syntax
+        csvContent += `${t.turbine},${a.category},"${a.activity_name}",${a.status},"\t${formattedStart}","\t${formattedEnd}",${a.duration}\n`;
       });
     });
 
