@@ -143,6 +143,32 @@ const WeeklyActivityDashboard = () => {
 
 
   const rawData = useMemo(() => {
+    if (selectedWeekId === 'All') {
+      const allTurbinesMap = {};
+      let minStart = null;
+      let maxEnd = null;
+
+      weeksData.forEach(w => {
+        if (!minStart || new Date(w.week_start) < new Date(minStart)) minStart = w.week_start;
+        if (!maxEnd || new Date(w.week_end) > new Date(maxEnd)) maxEnd = w.week_end;
+
+        w.turbines.forEach(t => {
+          if (!allTurbinesMap[t.turbine]) {
+            allTurbinesMap[t.turbine] = { ...t, activities: [...t.activities] };
+          } else {
+            allTurbinesMap[t.turbine].activities.push(...t.activities);
+            allTurbinesMap[t.turbine].total_week_activities += t.total_week_activities;
+          }
+        });
+      });
+
+      return {
+        week_id: "All",
+        week_start: minStart,
+        week_end: maxEnd,
+        turbines: Object.values(allTurbinesMap)
+      };
+    }
     return weeksData.find(w => w.week_id === selectedWeekId) || weeksData[0];
   }, [selectedWeekId]);
 
@@ -197,7 +223,21 @@ const WeeklyActivityDashboard = () => {
     const finalStart = minDate;
     const finalEnd = maxDate;
 
-    const timelineDatesList = getDatesInRange(finalStart, finalEnd);
+    const activeDateStrings = new Set();
+    filteredTurbinesList.forEach(t => {
+      t.activities.forEach(a => {
+        let d = new Date(a.act_planned_start_date);
+        const e = new Date(a.act_planned_end_date);
+        while (d <= e) {
+          activeDateStrings.add(d.toISOString().split('T')[0]);
+          d.setDate(d.getDate() + 1);
+        }
+      });
+    });
+
+    const activeDatesArray = Array.from(activeDateStrings).sort();
+    const timelineDatesList = activeDatesArray.map(dateStr => parseDateStr(dateStr));
+
 
     return {
       categories: catMap,
@@ -322,6 +362,7 @@ const WeeklyActivityDashboard = () => {
                   value={selectedWeekId}
                   onChange={(e) => setSelectedWeekId(e.target.value)}
                 >
+                  <MenuItem value="All">All Data (All Weeks)</MenuItem>
                   {weeksData.map(w => (
                     <MenuItem key={w.week_id} value={w.week_id}>{w.week_id}</MenuItem>
                   ))}
@@ -364,8 +405,25 @@ const WeeklyActivityDashboard = () => {
                 ))}
               </div>
 
-              {currentRecords.map(t => (
-                <div key={t.turbine} className="timeline-row" style={{ display: 'grid', gridTemplateColumns: `120px repeat(${timelineDates.length}, minmax(${colWidth}px, 1fr))` }}>
+              {currentRecords.map(t => {
+                const sortedActs = [...t.activities].sort((a, b) => new Date(a.act_planned_start_date) - new Date(b.act_planned_start_date));
+                const tracks = [];
+                const activitiesWithTracks = sortedActs.map(a => {
+                  const sDate = parseDateStr(a.act_planned_start_date);
+                  const eDate = parseDateStr(a.act_planned_end_date);
+                  let trackIdx = 0;
+                  while (tracks[trackIdx] && tracks[trackIdx] >= sDate) {
+                    trackIdx++;
+                  }
+                  tracks[trackIdx] = eDate;
+                  return { ...a, trackIdx, sDate, eDate };
+                });
+
+                const maxTrack = activitiesWithTracks.length > 0 ? Math.max(...activitiesWithTracks.map(a => a.trackIdx)) : 0;
+                const rowMinHeight = Math.max(60, (maxTrack + 1) * 42 + 24);
+
+                return (
+                <div key={t.turbine} className="timeline-row" style={{ display: 'grid', gridTemplateColumns: `120px repeat(${timelineDates.length}, minmax(${colWidth}px, 1fr))`, minHeight: `${rowMinHeight}px` }}>
                   <div className="timeline-row-label">{t.turbine}</div>
                   {/* Background grid lines drawn directly into the parent grid cells */}
                   {timelineDates.map((_, i) => (
@@ -373,26 +431,25 @@ const WeeklyActivityDashboard = () => {
                   ))}
 
                   <div className="timeline-bars-container" style={{ gridColumn: `2 / span ${timelineDates.length}`, gridRow: 1 }}>
-                    {t.activities.map((a, i) => {
-                      const sDate = parseDateStr(a.act_planned_start_date);
-                      const eDate = parseDateStr(a.act_planned_end_date);
+                    {activitiesWithTracks.map((a, i) => {
                       const totalDays = timelineDates.length;
-
-                      const offsetTime = sDate - timelineDates[0];
-                      const offsetDays = Math.round(offsetTime / (1000 * 60 * 60 * 24));
-
-                      const durationTime = eDate - sDate;
-                      const durationDays = Math.round(durationTime / (1000 * 60 * 60 * 24)) + 1;
-
-                      if (eDate < timelineDates[0] || sDate > timelineDates[timelineDates.length - 1]) return null;
+                      const sDateStr = a.sDate.toISOString().split('T')[0];
+                      const eDateStr = a.eDate.toISOString().split('T')[0];
+                      
+                      let startIndex = timelineDates.findIndex(d => d.toISOString().split('T')[0] === sDateStr);
+                      let endIndex = timelineDates.findIndex(d => d.toISOString().split('T')[0] === eDateStr);
+                      
+                      if (startIndex === -1) startIndex = 0;
+                      if (endIndex === -1) endIndex = timelineDates.length - 1;
 
                       // Introduce a physical gap between blocks so they don't visually touch
-                      const renderOffsetDays = offsetDays + 0.05;
-                      const renderDurationDays = Math.max(0.1, durationDays - 0.1);
+                      const renderOffsetDays = startIndex + 0.05;
+                      const renderDurationDays = Math.max(0.1, (endIndex - startIndex + 1) - 0.1);
 
                       const leftPct = (renderOffsetDays / totalDays) * 100;
                       const widthPct = (renderDurationDays / totalDays) * 100;
 
+                      const durationDays = Math.round((a.eDate - a.sDate) / (1000 * 60 * 60 * 24)) + 1;
                       const baseName = a.activity_name.split(' (')[0];
                       const color = activityColorMap[baseName] || activityColorMap[baseName.toUpperCase()] || activityColors[i % activityColors.length];
 
@@ -403,7 +460,9 @@ const WeeklyActivityDashboard = () => {
                           style={{
                             left: `${leftPct}%`,
                             width: `${widthPct}%`,
-                            backgroundColor: color
+                            backgroundColor: color,
+                            top: `${a.trackIdx * 42 + 12}px`,
+                            transform: 'none'
                           }}
                           title={`${baseName} (${durationDays} days)`}
                         >
@@ -413,7 +472,7 @@ const WeeklyActivityDashboard = () => {
                     })}
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
 
