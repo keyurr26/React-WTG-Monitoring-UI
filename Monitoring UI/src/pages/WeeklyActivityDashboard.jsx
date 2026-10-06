@@ -20,13 +20,6 @@ const formatDate = (dateStr) => {
   return d.toLocaleDateString('en-GB', options);
 };
 
-const getLocalISODate = (d) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
-
 const getDaysDiff = (start, end) => {
   const s = parseDateStr(start);
   const e = parseDateStr(end);
@@ -53,7 +46,6 @@ const activityColorMap = {
   'EXC': '#22c55e',
   'PCC': '#f59e0b',
   'CONDUIT': '#3b82f6',
-  'PCC & CONDUIT': '#f59e0b',
   'ANCHOR': '#ef4444',
   'REINFORCEMENT': '#a855f7',
   'FOUNDATION': '#06b6d4',
@@ -237,7 +229,7 @@ const WeeklyActivityDashboard = () => {
         let d = new Date(a.act_planned_start_date);
         const e = new Date(a.act_planned_end_date);
         while (d <= e) {
-          activeDateStrings.add(getLocalISODate(d));
+          activeDateStrings.add(d.toISOString().split('T')[0]);
           d.setDate(d.getDate() + 1);
         }
       });
@@ -415,43 +407,8 @@ const WeeklyActivityDashboard = () => {
 
               {currentRecords.map(t => {
                 const sortedActs = [...t.activities].sort((a, b) => new Date(a.act_planned_start_date) - new Date(b.act_planned_start_date));
-                
-                const pccActs = sortedActs.filter(a => a.activity_name.split(' (')[0].toUpperCase() === 'PCC');
-                const conduitActs = sortedActs.filter(a => a.activity_name.split(' (')[0].toUpperCase() === 'CONDUIT');
-                const otherActs = sortedActs.filter(a => {
-                  const name = a.activity_name.split(' (')[0].toUpperCase();
-                  return name !== 'PCC' && name !== 'CONDUIT';
-                });
-
-                let mergedActs = [...otherActs];
-
-                if (pccActs.length > 0 || conduitActs.length > 0) {
-                  const combined = [...pccActs, ...conduitActs];
-                  const startDates = combined.map(a => a.act_planned_start_date).sort();
-                  const endDates = combined.map(a => a.act_planned_end_date).sort();
-                  const minStart = startDates[0];
-                  const maxEnd = endDates[endDates.length - 1];
-
-                  let newName = '';
-                  if (pccActs.length > 0 && conduitActs.length > 0) newName = 'PCC_AND_CONDUIT';
-                  else if (pccActs.length > 0) newName = 'PCC';
-                  else newName = 'CONDUIT';
-
-                  mergedActs.push({
-                    ...combined[0],
-                    id: combined.map(a => a.id).join('-'),
-                    activity_name: newName,
-                    original_pcc: pccActs[0],
-                    original_conduit: conduitActs[0],
-                    act_planned_start_date: minStart,
-                    act_planned_end_date: maxEnd
-                  });
-                }
-
-                mergedActs.sort((a, b) => new Date(a.act_planned_start_date) - new Date(b.act_planned_start_date));
-
                 const tracks = [];
-                const activitiesWithTracks = mergedActs.map(a => {
+                const activitiesWithTracks = sortedActs.map(a => {
                   const sDate = parseDateStr(a.act_planned_start_date);
                   const eDate = parseDateStr(a.act_planned_end_date);
                   let trackIdx = 0;
@@ -476,11 +433,11 @@ const WeeklyActivityDashboard = () => {
                   <div className="timeline-bars-container" style={{ gridColumn: `2 / span ${timelineDates.length}`, gridRow: 1 }}>
                     {activitiesWithTracks.map((a, i) => {
                       const totalDays = timelineDates.length;
-                      const sDateStr = getLocalISODate(a.sDate);
-                      const eDateStr = getLocalISODate(a.eDate);
+                      const sDateStr = a.sDate.toISOString().split('T')[0];
+                      const eDateStr = a.eDate.toISOString().split('T')[0];
                       
-                      let startIndex = timelineDates.findIndex(d => getLocalISODate(d) === sDateStr);
-                      let endIndex = timelineDates.findIndex(d => getLocalISODate(d) === eDateStr);
+                      let startIndex = timelineDates.findIndex(d => d.toISOString().split('T')[0] === sDateStr);
+                      let endIndex = timelineDates.findIndex(d => d.toISOString().split('T')[0] === eDateStr);
                       
                       if (startIndex === -1) startIndex = 0;
                       if (endIndex === -1) endIndex = timelineDates.length - 1;
@@ -495,96 +452,6 @@ const WeeklyActivityDashboard = () => {
                       const durationDays = Math.round((a.eDate - a.sDate) / (1000 * 60 * 60 * 24)) + 1;
                       const baseName = a.activity_name.split(' (')[0];
                       const color = activityColorMap[baseName] || activityColorMap[baseName.toUpperCase()] || activityColors[i % activityColors.length];
-
-                      if (baseName === 'PCC_AND_CONDUIT') {
-                        const pcc = a.original_pcc;
-                        const cond = a.original_conduit;
-                        const pccDur = pcc ? Math.round((new Date(pcc.act_planned_end_date) - new Date(pcc.act_planned_start_date)) / (1000 * 60 * 60 * 24)) + 1 : 0;
-                        const condDur = cond ? Math.round((new Date(cond.act_planned_end_date) - new Date(cond.act_planned_start_date)) / (1000 * 60 * 60 * 24)) + 1 : 0;
-                        
-                        const outerTotalDays = endIndex - startIndex + 1;
-                        
-                        let pccLeft = 0, pccWidth = 0;
-                        if (pcc) {
-                          let pccStartIdx = timelineDates.findIndex(d => getLocalISODate(d) === pcc.act_planned_start_date.split('T')[0]);
-                          let pccEndIdx = timelineDates.findIndex(d => getLocalISODate(d) === pcc.act_planned_end_date.split('T')[0]);
-                          if (pccStartIdx === -1) pccStartIdx = 0;
-                          if (pccEndIdx === -1) pccEndIdx = timelineDates.length - 1;
-                          pccLeft = ((pccStartIdx - startIndex) / outerTotalDays) * 100;
-                          pccWidth = ((pccEndIdx - pccStartIdx + 1) / outerTotalDays) * 100;
-                        }
-                        
-                        let condLeft = 0, condWidth = 0;
-                        if (cond) {
-                          let condStartIdx = timelineDates.findIndex(d => getLocalISODate(d) === cond.act_planned_start_date.split('T')[0]);
-                          let condEndIdx = timelineDates.findIndex(d => getLocalISODate(d) === cond.act_planned_end_date.split('T')[0]);
-                          if (condStartIdx === -1) condStartIdx = 0;
-                          if (condEndIdx === -1) condEndIdx = timelineDates.length - 1;
-                          condLeft = ((condStartIdx - startIndex) / outerTotalDays) * 100;
-                          condWidth = ((condEndIdx - condStartIdx + 1) / outerTotalDays) * 100;
-                        }
-                        
-                        return (
-                          <div
-                            key={a.id}
-                            className="timeline-bar"
-                            style={{
-                              left: `${leftPct}%`,
-                              width: `${widthPct}%`,
-                              backgroundColor: '#f8fafc',
-                              border: '1px solid #cbd5e1',
-                              top: `${a.trackIdx * 42 + 12}px`,
-                              transform: 'none',
-                              padding: 0,
-                              overflow: 'hidden',
-                              borderRadius: '12px',
-                              boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.05)'
-                            }}
-                            title={`PCC (${pccDur} days) & CONDUIT (${condDur} days)`}
-                          >
-                            {pcc && (
-                              <div style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: `${pccLeft}%`,
-                                width: `${pccWidth}%`,
-                                height: '50%',
-                                backgroundColor: '#f59e0b',
-                                display: 'flex',
-                                alignItems: 'center',
-                                paddingLeft: '8px',
-                                fontSize: '11px',
-                                color: '#fff',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                PCC ({pccDur} {pccDur === 1 ? 'day' : 'days'})
-                              </div>
-                            )}
-                            {cond && (
-                              <div style={{
-                                position: 'absolute',
-                                bottom: 0,
-                                left: `${condLeft}%`,
-                                width: `${condWidth}%`,
-                                height: '50%',
-                                backgroundColor: '#3b82f6',
-                                display: 'flex',
-                                alignItems: 'center',
-                                paddingLeft: '8px',
-                                fontSize: '11px',
-                                color: '#fff',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                CONDUIT ({condDur} {condDur === 1 ? 'day' : 'days'})
-                              </div>
-                            )}
-                          </div>
-                        );
-                      }
 
                       return (
                         <div
