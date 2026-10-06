@@ -125,8 +125,14 @@
   font-weight: 600;
   color: #475569;
   font-size: 14px;
-  align-self: end;
+  display: flex;
+  align-items: flex-end;
   padding-left: 16px;
+  position: sticky;
+  left: 0;
+  background-color: #fff;
+  z-index: 11;
+  border-right: 1px solid #e2e8f0;
 }
 .timeline-date {
   text-align: left;
@@ -150,7 +156,15 @@
   color: #0f172a;
   font-size: 14px;
   padding-left: 16px;
-  align-self: center;
+  display: flex;
+  align-items: center;
+  position: sticky;
+  left: 0;
+  background-color: #fff;
+  z-index: 5;
+  border-bottom: 1px dashed #cbd5e1;
+  border-right: 1px solid #e2e8f0;
+  margin-bottom: -1px;
 }
 .timeline-grid-line {
   border-left: 1px dashed #cbd5e1;
